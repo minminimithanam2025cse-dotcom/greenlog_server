@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenLog | User - Trees</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="app-layout">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">🌱</div>
+            <div class="sidebar-logo-text">GreenLog</div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Overview</div>
+            <a href="dashboard.html" class="nav-link">
+                <span class="nav-icon">📊</span>
+                Dashboard
+            </a>
+
+            <div class="nav-section-title">GreenLog Data</div>
+            <a href="volunteers.html" class="nav-link">
+                <span class="nav-icon">👥</span>
+                Volunteers
+            </a>
+            <a href="trees.html" class="nav-link active">
+                <span class="nav-icon">🌳</span>
+                Trees
+            </a>
+            <a href="drives.html" class="nav-link">
+                <span class="nav-icon">🌿</span>
+                Plantation Drives
+            </a>
+            <a href="checkins.html" class="nav-link">
+                <span class="nav-icon">📋</span>
+                Check-ins
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="logout-btn" data-logout>
+                🚪 Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="main-content">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div>
+                <div class="page-title">Trees</div>
+                <div class="page-subtitle">View planted tree records and species information</div>
+            </div>
+            <div class="topbar-right">
+                <div class="user-profile">
+                    <div class="avatar">U</div>
+                    <div>
+                        <strong data-user-name>User</strong>
+                        <div class="text-muted" style="font-size:12px;" data-user-role>User</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTENT -->
+        <section class="content">
+
+            <div class="page-head">
+                <div>
+                    <h2>Tree Directory</h2>
+                    <p>Browse tree inventory records, plantation locations, and volunteer contributions</p>
+                </div>
+                <button class="btn btn-outline" onclick="openLeaderboardModal()">
+                    🏆 Volunteer Leaderboard
+                </button>
+            </div>
+
+            <!-- TOOLBAR & SEARCH & FILTER TABS -->
+            <div class="page-toolbar">
+                <div class="toolbar-left" style="flex-wrap: wrap;">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchInput" placeholder="Search by species, location, volunteer or drive...">
+                    </div>
+                    <button class="btn btn-outline btn-sm" id="filterAllBtn" onclick="setFilterMode('all')">
+                        All Trees
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="filterDueBtn" onclick="setFilterMode('due')">
+                        ⏰ Due For Check-in
+                    </button>
+                </div>
+                <div class="toolbar-right">
+                    <span class="badge badge-success" id="treeCountBadge">0 Trees</span>
+                </div>
+            </div>
+
+            <!-- TABLE CARD -->
+            <div class="card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Species</th>
+                                <th>Location</th>
+                                <th>Date Planted</th>
+                                <th>Volunteer</th>
+                                <th>Plantation Drive</th>
+                            </tr>
+                        </thead>
+                        <tbody id="treesTbody">
+                            <tr>
+                                <td colspan="6">
+                                    <div class="loading">
+                                        <div class="spinner"></div> Loading tree records...
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+    </main>
+</div>
+
+<!-- ================= MODAL: LEADERBOARD ================= -->
+<div class="modal" id="leaderboardModal">
+    <div class="modal-box">
+        <h2>🏆 Volunteer Leaderboard</h2>
+        <p class="text-light mb-3" style="font-size:13px;">Volunteers ranked by total trees planted</p>
+        <div id="leaderboardContent">
+            <div class="loading"><div class="spinner"></div> Loading leaderboard...</div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('leaderboardModal')">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="../js/core.js"></script>
+<script>
+    A.guard("user");
+
+    let allTrees = [];
+    let currentFilterMode = "all";
+
+    async function loadTrees() {
+        try {
+            let data;
+            if (currentFilterMode === "due") {
+                data = await api("/api/trees/due-for-checkin");
+            } else {
+                data = await api("/api/trees");
+            }
+            allTrees = Array.isArray(data) ? data : [];
+            renderTrees(allTrees);
+        } catch (error) {
+            console.error("Error loading trees:", error);
+            document.getElementById("treesTbody").innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state text-danger">
+                            <div class="empty-state-icon">⚠️</div>
+                            <div class="empty-state-title">Unable to load trees</div>
+                            <div style="font-size:13px;">${esc(error.message || "Please try again later.")}</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    function renderTrees(trees) {
+        const tbody = document.getElementById("treesTbody");
+        const countBadge = document.getElementById("treeCountBadge");
+
+        countBadge.textContent = `${trees.length} Tree${trees.length === 1 ? '' : 's'}`;
+
+        if (trees.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🌳</div>
+                            <div class="empty-state-title">No tree records found</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = trees.map(t => {
+            const vName = t.volunteer?.name || t.volunteerName || (t.volunteer?.id ? `Volunteer #${t.volunteer.id}` : "-");
+            const dName = t.plantationDrive?.name || t.driveName || (t.plantationDrive?.id ? `Drive #${t.plantationDrive.id}` : "-");
+            const dateStr = date(t.datePlanted || t.date_planted);
+
+            return `
+                <tr>
+                    <td>#${esc(t.id)}</td>
+                    <td><strong>${esc(t.species || "-")}</strong></td>
+                    <td>${esc(t.location || "-")}</td>
+                    <td>${dateStr}</td>
+                    <td>${esc(vName)}</td>
+                    <td>${esc(dName)}</td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    function setFilterMode(mode) {
+        currentFilterMode = mode;
+        const allBtn = document.getElementById("filterAllBtn");
+        const dueBtn = document.getElementById("filterDueBtn");
+
+        if (mode === "due") {
+            allBtn.className = "btn btn-secondary btn-sm";
+            dueBtn.className = "btn btn-outline btn-sm";
+        } else {
+            allBtn.className = "btn btn-outline btn-sm";
+            dueBtn.className = "btn btn-secondary btn-sm";
+        }
+        loadTrees();
+    }
+
+    document.getElementById("searchInput").addEventListener("input", function() {
+        const query = this.value.trim().toLowerCase();
+        const filtered = allTrees.filter(t => {
+            const vName = t.volunteer?.name || "";
+            const dName = t.plantationDrive?.name || "";
+            return (
+                String(t.species || "").toLowerCase().includes(query) ||
+                String(t.location || "").toLowerCase().includes(query) ||
+                String(vName).toLowerCase().includes(query) ||
+                String(dName).toLowerCase().includes(query) ||
+                String(t.id || "").includes(query)
+            );
+        });
+        renderTrees(filtered);
+    });
+
+    async function openLeaderboardModal() {
+        openModal("leaderboardModal");
+        const container = document.getElementById("leaderboardContent");
+        container.innerHTML = '<div class="loading"><div class="spinner"></div> Loading leaderboard...</div>';
+
+        try {
+            const data = await api("/api/trees/leaderboard");
+            if (!data || Object.keys(data).length === 0) {
+                container.innerHTML = '<div class="empty-state">No leaderboard records available.</div>';
+                return;
+            }
+
+            const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
+            container.innerHTML = `
+                <table style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Volunteer</th>
+                            <th style="text-align:right;">Trees Planted</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${entries.map(([name, count], index) => `
+                            <tr>
+                                <td><strong>#${index + 1}</strong></td>
+                                <td>${esc(name)}</td>
+                                <td style="text-align:right;"><strong>${count}</strong></td>
+                            </tr>
+                        `).join("")}
+                    </tbody>
+                </table>
+            `;
+        } catch (error) {
+            console.error("Leaderboard error:", error);
+            container.innerHTML = `<div class="empty-state text-danger">Unable to load leaderboard.</div>`;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadTrees);
+</script>
+
+</body>
+</html>

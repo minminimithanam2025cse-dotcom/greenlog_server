@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenLog | User - Check-ins</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="app-layout">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">🌱</div>
+            <div class="sidebar-logo-text">GreenLog</div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Overview</div>
+            <a href="dashboard.html" class="nav-link">
+                <span class="nav-icon">📊</span>
+                Dashboard
+            </a>
+
+            <div class="nav-section-title">GreenLog Data</div>
+            <a href="volunteers.html" class="nav-link">
+                <span class="nav-icon">👥</span>
+                Volunteers
+            </a>
+            <a href="trees.html" class="nav-link">
+                <span class="nav-icon">🌳</span>
+                Trees
+            </a>
+            <a href="drives.html" class="nav-link">
+                <span class="nav-icon">🌿</span>
+                Plantation Drives
+            </a>
+            <a href="checkins.html" class="nav-link active">
+                <span class="nav-icon">📋</span>
+                Check-ins
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="logout-btn" data-logout>
+                🚪 Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="main-content">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div>
+                <div class="page-title">Tree Check-ins</div>
+                <div class="page-subtitle">View tree health evaluations and periodic check-in records</div>
+            </div>
+            <div class="topbar-right">
+                <div class="user-profile">
+                    <div class="avatar">U</div>
+                    <div>
+                        <strong data-user-name>User</strong>
+                        <div class="text-muted" style="font-size:12px;" data-user-role>User</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTENT -->
+        <section class="content">
+
+            <div class="page-head">
+                <div>
+                    <h2>Check-in History Log</h2>
+                    <p>Inspect tree health status reports and observation notes</p>
+                </div>
+            </div>
+
+            <!-- TOOLBAR & SEARCH -->
+            <div class="page-toolbar">
+                <div class="toolbar-left">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchInput" placeholder="Search by status, notes or tree ID...">
+                    </div>
+                </div>
+                <div class="toolbar-right">
+                    <span class="badge badge-info" id="checkinCountBadge">0 Check-ins</span>
+                </div>
+            </div>
+
+            <!-- TABLE CARD -->
+            <div class="card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tree</th>
+                                <th>Check-in Date</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="checkinsTbody">
+                            <tr>
+                                <td colspan="5">
+                                    <div class="loading">
+                                        <div class="spinner"></div> Loading check-ins...
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+    </main>
+</div>
+
+<script src="../js/core.js"></script>
+<script>
+    A.guard("user");
+
+    let allCheckins = [];
+
+    async function loadCheckins() {
+        try {
+            const data = await api("/api/checkins");
+            allCheckins = Array.isArray(data) ? data : [];
+            renderCheckins(allCheckins);
+        } catch (error) {
+            console.error("Error loading checkins:", error);
+            document.getElementById("checkinsTbody").innerHTML = `
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state text-danger">
+                            <div class="empty-state-icon">⚠️</div>
+                            <div class="empty-state-title">Unable to load check-ins</div>
+                            <div style="font-size:13px;">${esc(error.message || "Please try again later.")}</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    function renderCheckins(checkins) {
+        const tbody = document.getElementById("checkinsTbody");
+        const countBadge = document.getElementById("checkinCountBadge");
+
+        countBadge.textContent = `${checkins.length} Check-in${checkins.length === 1 ? '' : 's'}`;
+
+        if (checkins.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <div class="empty-state-title">No check-in records found</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = checkins.map(c => {
+            const tId = c.tree?.id ?? c.treeId ?? "-";
+            const species = c.tree?.species ? ` (${c.tree.species})` : "";
+            const dateStr = date(c.checkInDate || c.check_in_date);
+
+            return `
+                <tr>
+                    <td>#${esc(c.id)}</td>
+                    <td><strong>Tree #${esc(tId)}</strong>${esc(species)}</td>
+                    <td>${dateStr}</td>
+                    <td>${statusBadge(c.status)}</td>
+                    <td>${esc(c.notes || "-")}</td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    document.getElementById("searchInput").addEventListener("input", function() {
+        const query = this.value.trim().toLowerCase();
+        const filtered = allCheckins.filter(c => {
+            const tId = c.tree?.id ?? c.treeId ?? "";
+            const species = c.tree?.species || "";
+            return (
+                String(c.status || "").toLowerCase().includes(query) ||
+                String(c.notes || "").toLowerCase().includes(query) ||
+                String(tId).toLowerCase().includes(query) ||
+                String(species).toLowerCase().includes(query) ||
+                String(c.id || "").includes(query)
+            );
+        });
+        renderCheckins(filtered);
+    });
+
+    document.addEventListener("DOMContentLoaded", loadCheckins);
+</script>
+
+</body>
+</html>

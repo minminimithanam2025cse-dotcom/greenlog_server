@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenLog | Admin Dashboard</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="app-layout">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">🌱</div>
+            <div class="sidebar-logo-text">GreenLog</div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Main Menu</div>
+            <a href="dashboard.html" class="nav-link active">
+                <span class="nav-icon">📊</span>
+                Dashboard
+            </a>
+            <a href="volunteers.html" class="nav-link">
+                <span class="nav-icon">👥</span>
+                Volunteers
+            </a>
+            <a href="trees.html" class="nav-link">
+                <span class="nav-icon">🌳</span>
+                Trees
+            </a>
+            <a href="drives.html" class="nav-link">
+                <span class="nav-icon">🌿</span>
+                Plantation Drives
+            </a>
+            <a href="checkins.html" class="nav-link">
+                <span class="nav-icon">📋</span>
+                Check-ins
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="logout-btn" data-logout>
+                🚪 Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="main-content">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div>
+                <div class="page-title">Admin Dashboard</div>
+                <div class="page-subtitle">Welcome back, Administrator 👋</div>
+            </div>
+            <div class="topbar-right">
+                <div class="user-profile">
+                    <div class="avatar">A</div>
+                    <div>
+                        <strong data-user-name>Administrator</strong>
+                        <div class="text-muted" style="font-size:12px;" data-user-role>Admin</div>
+                    </div>
+                </div>
+                <div class="admin-badge">🛡️ Administrator</div>
+            </div>
+        </header>
+
+        <!-- CONTENT -->
+        <section class="content">
+
+            <!-- STATISTIC CARDS -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-label">Total Volunteers</div>
+                            <div class="stat-value" id="volunteerCount">...</div>
+                        </div>
+                        <div class="stat-icon">👥</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-label">Total Trees</div>
+                            <div class="stat-value" id="treeCount">...</div>
+                        </div>
+                        <div class="stat-icon">🌳</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-label">Plantation Drives</div>
+                            <div class="stat-value" id="driveCount">...</div>
+                        </div>
+                        <div class="stat-icon">🌿</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-label">Total Check-ins</div>
+                            <div class="stat-value" id="checkinCount">...</div>
+                        </div>
+                        <div class="stat-icon">📋</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUICK ACTIONS -->
+            <div class="page-head mt-4">
+                <div>
+                    <h2>Quick Management</h2>
+                    <p>Manage environmental data across the GreenLog platform</p>
+                </div>
+            </div>
+
+            <div class="grid-4 mb-4">
+                <a href="volunteers.html" class="card" style="padding: 20px; text-decoration: none;">
+                    <div class="stat-icon mb-3">👥</div>
+                    <div class="fw-bold mb-1">Volunteers</div>
+                    <div class="text-light" style="font-size: 13px;">Manage volunteer profiles and contact details.</div>
+                </a>
+
+                <a href="trees.html" class="card" style="padding: 20px; text-decoration: none;">
+                    <div class="stat-icon mb-3">🌳</div>
+                    <div class="fw-bold mb-1">Trees</div>
+                    <div class="text-light" style="font-size: 13px;">Monitor planted tree species, dates and locations.</div>
+                </a>
+
+                <a href="drives.html" class="card" style="padding: 20px; text-decoration: none;">
+                    <div class="stat-icon mb-3">🌿</div>
+                    <div class="fw-bold mb-1">Plantation Drives</div>
+                    <div class="text-light" style="font-size: 13px;">Organize drives and review survival statistics.</div>
+                </a>
+
+                <a href="checkins.html" class="card" style="padding: 20px; text-decoration: none;">
+                    <div class="stat-icon mb-3">📋</div>
+                    <div class="fw-bold mb-1">Check-ins</div>
+                    <div class="text-light" style="font-size: 13px;">Record health evaluations and status updates.</div>
+                </a>
+            </div>
+
+            <!-- RECENT CHECK-INS TABLE -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Recent Check-ins</div>
+                    <a href="checkins.html" class="btn btn-outline btn-sm">View All →</a>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tree ID</th>
+                                <th>Check-in Date</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentCheckins">
+                            <tr>
+                                <td colspan="5">
+                                    <div class="loading">
+                                        <div class="spinner"></div> Loading dashboard data...
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+    </main>
+</div>
+
+<script src="../js/core.js"></script>
+<script>
+    A.guard("admin");
+
+    async function loadDashboard() {
+        try {
+            const [volunteers, trees, drives, checkins] = await Promise.all([
+                api("/api/volunteers"),
+                api("/api/trees"),
+                api("/api/drives"),
+                api("/api/checkins")
+            ]);
+
+            document.getElementById("volunteerCount").textContent = number(volunteers?.length || 0);
+            document.getElementById("treeCount").textContent = number(trees?.length || 0);
+            document.getElementById("driveCount").textContent = number(drives?.length || 0);
+            document.getElementById("checkinCount").textContent = number(checkins?.length || 0);
+
+            const tbody = document.getElementById("recentCheckins");
+            const checkinList = Array.isArray(checkins) ? checkins : [];
+
+            if (checkinList.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📋</div>
+                                <div class="empty-state-title">No check-ins recorded yet</div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const recent = [...checkinList]
+                .sort((a, b) => new Date(b.checkInDate || b.check_in_date || 0) - new Date(a.checkInDate || a.check_in_date || 0))
+                .slice(0, 5);
+
+            tbody.innerHTML = recent.map(item => `
+                <tr>
+                    <td>#${esc(item.id)}</td>
+                    <td>Tree #${esc(item.tree?.id ?? item.treeId ?? "-")}</td>
+                    <td>${date(item.checkInDate ?? item.check_in_date)}</td>
+                    <td>${statusBadge(item.status)}</td>
+                    <td>${esc(item.notes || "-")}</td>
+                </tr>
+            `).join("");
+
+        } catch (error) {
+            console.error("Dashboard loading error:", error);
+            document.getElementById("recentCheckins").innerHTML = `
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state text-danger">
+                            <div class="empty-state-icon">⚠️</div>
+                            <div class="empty-state-title">Unable to load dashboard data</div>
+                            <div style="font-size: 13px;">${esc(error.message || "Please try again later.")}</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadDashboard);
+</script>
+
+</body>
+</html>

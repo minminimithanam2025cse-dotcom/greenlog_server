@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenLog | User - Plantation Drives</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="app-layout">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">🌱</div>
+            <div class="sidebar-logo-text">GreenLog</div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Overview</div>
+            <a href="dashboard.html" class="nav-link">
+                <span class="nav-icon">📊</span>
+                Dashboard
+            </a>
+
+            <div class="nav-section-title">GreenLog Data</div>
+            <a href="volunteers.html" class="nav-link">
+                <span class="nav-icon">👥</span>
+                Volunteers
+            </a>
+            <a href="trees.html" class="nav-link">
+                <span class="nav-icon">🌳</span>
+                Trees
+            </a>
+            <a href="drives.html" class="nav-link active">
+                <span class="nav-icon">🌿</span>
+                Plantation Drives
+            </a>
+            <a href="checkins.html" class="nav-link">
+                <span class="nav-icon">📋</span>
+                Check-ins
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="logout-btn" data-logout>
+                🚪 Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="main-content">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div>
+                <div class="page-title">Plantation Drives</div>
+                <div class="page-subtitle">View plantation drive information and statistics</div>
+            </div>
+            <div class="topbar-right">
+                <div class="user-profile">
+                    <div class="avatar">U</div>
+                    <div>
+                        <strong data-user-name>User</strong>
+                        <div class="text-muted" style="font-size:12px;" data-user-role>User</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTENT -->
+        <section class="content">
+
+            <div class="page-head">
+                <div>
+                    <h2>Plantation Drive Directory</h2>
+                    <p>Inspect environmental plantation events, dates, locations and survival metrics</p>
+                </div>
+            </div>
+
+            <!-- TOOLBAR & SEARCH -->
+            <div class="page-toolbar">
+                <div class="toolbar-left">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchInput" placeholder="Search by drive name or location...">
+                    </div>
+                </div>
+                <div class="toolbar-right">
+                    <span class="badge badge-success" id="driveCountBadge">0 Drives</span>
+                </div>
+            </div>
+
+            <!-- TABLE CARD -->
+            <div class="card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Drive Name</th>
+                                <th>Location</th>
+                                <th>Event Date</th>
+                                <th>Description</th>
+                                <th style="text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="drivesTbody">
+                            <tr>
+                                <td colspan="6">
+                                    <div class="loading">
+                                        <div class="spinner"></div> Loading plantation drives...
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+    </main>
+</div>
+
+<!-- ================= MODAL: DRIVE STATISTICS ================= -->
+<div class="modal" id="statsModal">
+    <div class="modal-box">
+        <h2 id="statsModalTitle">📊 Drive Statistics</h2>
+        <div id="statsModalBody">
+            <div class="loading"><div class="spinner"></div> Calculating statistics...</div>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('statsModal')">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="../js/core.js"></script>
+<script>
+    A.guard("user");
+
+    let allDrives = [];
+
+    async function loadDrives() {
+        try {
+            const data = await api("/api/drives");
+            allDrives = Array.isArray(data) ? data : [];
+            renderDrives(allDrives);
+        } catch (error) {
+            console.error("Error loading drives:", error);
+            document.getElementById("drivesTbody").innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state text-danger">
+                            <div class="empty-state-icon">⚠️</div>
+                            <div class="empty-state-title">Unable to load plantation drives</div>
+                            <div style="font-size:13px;">${esc(error.message || "Please try again later.")}</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    function renderDrives(drives) {
+        const tbody = document.getElementById("drivesTbody");
+        const countBadge = document.getElementById("driveCountBadge");
+
+        countBadge.textContent = `${drives.length} Drive${drives.length === 1 ? '' : 's'}`;
+
+        if (drives.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🌿</div>
+                            <div class="empty-state-title">No plantation drives found</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = drives.map(d => `
+            <tr>
+                <td>#${esc(d.id)}</td>
+                <td><strong>${esc(d.name || "-")}</strong></td>
+                <td>${esc(d.location || "-")}</td>
+                <td>${date(d.date)}</td>
+                <td>${esc(d.description || "-")}</td>
+                <td>
+                    <div class="table-actions" style="justify-content: flex-end;">
+                        <button class="btn btn-success btn-sm" onclick="showDriveStats(${d.id})">
+                            📊 View Stats
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join("");
+    }
+
+    document.getElementById("searchInput").addEventListener("input", function() {
+        const query = this.value.trim().toLowerCase();
+        const filtered = allDrives.filter(d => 
+            String(d.name || "").toLowerCase().includes(query) ||
+            String(d.location || "").toLowerCase().includes(query) ||
+            String(d.description || "").toLowerCase().includes(query) ||
+            String(d.id || "").includes(query)
+        );
+        renderDrives(filtered);
+    });
+
+    async function showDriveStats(id) {
+        const drive = allDrives.find(item => item.id == id);
+        const titleText = drive ? `📊 Statistics - ${drive.name}` : `📊 Drive #${id} Statistics`;
+        document.getElementById("statsModalTitle").textContent = titleText;
+
+        const body = document.getElementById("statsModalBody");
+        body.innerHTML = '<div class="loading"><div class="spinner"></div> Calculating statistics...</div>';
+        openModal("statsModal");
+
+        try {
+            const [stats, survivalRate] = await Promise.all([
+                api(`/api/drives/${id}/statistics`),
+                api(`/api/drives/${id}/survival-rate`)
+            ]);
+
+            const total = stats.totalTrees ?? stats.treeCount ?? 0;
+            const alive = stats.aliveTrees ?? stats.aliveCount ?? 0;
+            const dead = stats.deadTrees ?? stats.deadCount ?? 0;
+            const rate = typeof survivalRate === "number" ? survivalRate : (stats.survivalRate ?? 0);
+
+            body.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size:13px; color: var(--text-light);">Drive Location</div>
+                    <div style="font-weight:700; font-size: 16px;">${esc(stats.driveName || drive?.name || "-")} (${esc(drive?.location || "-")})</div>
+                </div>
+
+                <div class="grid-2 mb-4">
+                    <div class="stat-card" style="padding:15px;">
+                        <div class="stat-label">Total Trees Planted</div>
+                        <div class="stat-value">${number(total)}</div>
+                    </div>
+                    <div class="stat-card" style="padding:15px;">
+                        <div class="stat-label">Survival Rate</div>
+                        <div class="stat-value" style="color: var(--primary);">${percentage(rate)}</div>
+                    </div>
+                    <div class="stat-card" style="padding:15px;">
+                        <div class="stat-label">Alive Trees</div>
+                        <div class="stat-value" style="color: var(--success);">${number(alive)}</div>
+                    </div>
+                    <div class="stat-card" style="padding:15px;">
+                        <div class="stat-label">Dead Trees</div>
+                        <div class="stat-value" style="color: var(--danger);">${number(dead)}</div>
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            console.error("Error loading drive stats:", error);
+            body.innerHTML = `
+                <div class="empty-state text-danger">
+                    <div class="empty-state-icon">⚠️</div>
+                    <div class="empty-state-title">Unable to load statistics</div>
+                    <div style="font-size:13px;">${esc(error.message || "Please try again.")}</div>
+                </div>
+            `;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadDrives);
+</script>
+
+</body>
+</html>

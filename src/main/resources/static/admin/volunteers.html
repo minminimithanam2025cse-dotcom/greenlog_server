@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenLog | Admin - Volunteers</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="app-layout">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">🌱</div>
+            <div class="sidebar-logo-text">GreenLog</div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Main Menu</div>
+            <a href="dashboard.html" class="nav-link">
+                <span class="nav-icon">📊</span>
+                Dashboard
+            </a>
+            <a href="volunteers.html" class="nav-link active">
+                <span class="nav-icon">👥</span>
+                Volunteers
+            </a>
+            <a href="trees.html" class="nav-link">
+                <span class="nav-icon">🌳</span>
+                Trees
+            </a>
+            <a href="drives.html" class="nav-link">
+                <span class="nav-icon">🌿</span>
+                Plantation Drives
+            </a>
+            <a href="checkins.html" class="nav-link">
+                <span class="nav-icon">📋</span>
+                Check-ins
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="logout-btn" data-logout>
+                🚪 Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="main-content">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div>
+                <div class="page-title">Volunteers</div>
+                <div class="page-subtitle">Manage GreenLog registered volunteers</div>
+            </div>
+            <div class="topbar-right">
+                <div class="user-profile">
+                    <div class="avatar">A</div>
+                    <div>
+                        <strong data-user-name>Administrator</strong>
+                        <div class="text-muted" style="font-size:12px;" data-user-role>Admin</div>
+                    </div>
+                </div>
+                <div class="admin-badge">🛡️ Admin</div>
+            </div>
+        </header>
+
+        <!-- CONTENT -->
+        <section class="content">
+
+            <div class="page-head">
+                <div>
+                    <h2>Volunteer Roster</h2>
+                    <p>Add, edit, search or delete volunteers in the database</p>
+                </div>
+                <button class="btn btn-primary" onclick="openAddModal()">
+                    + Add Volunteer
+                </button>
+            </div>
+
+            <!-- TOOLBAR & SEARCH -->
+            <div class="page-toolbar">
+                <div class="toolbar-left">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchInput" placeholder="Search by name or email...">
+                    </div>
+                </div>
+                <div class="toolbar-right">
+                    <span class="badge badge-success" id="volunteerCountBadge">0 Volunteers</span>
+                </div>
+            </div>
+
+            <!-- TABLE CARD -->
+            <div class="card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Volunteer Name</th>
+                                <th>Email</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="volunteersTbody">
+                            <tr>
+                                <td colspan="4">
+                                    <div class="loading">
+                                        <div class="spinner"></div> Loading volunteers...
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+    </main>
+</div>
+
+<!-- ================= MODAL (Direct child of body) ================= -->
+<div class="modal" id="volunteerModal">
+    <div class="modal-box">
+        <h2 id="modalTitle">Add Volunteer</h2>
+        <form id="volunteerForm">
+            <input type="hidden" id="volunteerId">
+
+            <div class="form-group">
+                <label for="volunteerName">Full Name *</label>
+                <input type="text" id="volunteerName" placeholder="e.g. John Doe" required>
+            </div>
+
+            <div class="form-group">
+                <label for="volunteerEmail">Email Address *</label>
+                <input type="email" id="volunteerEmail" placeholder="e.g. john@example.com" required>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('volunteerModal')">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary" id="saveVolunteerBtn">
+                    Save Volunteer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="../js/core.js"></script>
+<script>
+    A.guard("admin");
+
+    let allVolunteers = [];
+
+    async function loadVolunteers() {
+        try {
+            const data = await api("/api/volunteers");
+            allVolunteers = Array.isArray(data) ? data : [];
+            renderVolunteers(allVolunteers);
+        } catch (error) {
+            console.error("Error loading volunteers:", error);
+            document.getElementById("volunteersTbody").innerHTML = `
+                <tr>
+                    <td colspan="4">
+                        <div class="empty-state text-danger">
+                            <div class="empty-state-icon">⚠️</div>
+                            <div class="empty-state-title">Unable to load volunteers</div>
+                            <div style="font-size:13px;">${esc(error.message || "Please check backend connection.")}</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    function renderVolunteers(volunteers) {
+        const tbody = document.getElementById("volunteersTbody");
+        const countBadge = document.getElementById("volunteerCountBadge");
+
+        countBadge.textContent = `${volunteers.length} Volunteer${volunteers.length === 1 ? '' : 's'}`;
+
+        if (volunteers.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">👥</div>
+                            <div class="empty-state-title">No volunteers found</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = volunteers.map(v => `
+            <tr>
+                <td>#${esc(v.id)}</td>
+                <td>
+                    <div class="person">
+                        <div class="avatar" style="margin-right:10px;">${initials(v.name)}</div>
+                        <strong>${esc(v.name || "-")}</strong>
+                    </div>
+                </td>
+                <td class="email">${esc(v.email || "-")}</td>
+                <td>
+                    <div class="table-actions" style="justify-content: flex-end;">
+                        <button class="btn btn-edit btn-sm" onclick="openEditModal(${v.id})">
+                            ✏️ Edit
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteVolunteer(${v.id})">
+                            🗑 Delete
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join("");
+    }
+
+    document.getElementById("searchInput").addEventListener("input", function() {
+        const query = this.value.trim().toLowerCase();
+        const filtered = allVolunteers.filter(v => 
+            String(v.name || "").toLowerCase().includes(query) ||
+            String(v.email || "").toLowerCase().includes(query) ||
+            String(v.id || "").includes(query)
+        );
+        renderVolunteers(filtered);
+    });
+
+    function openAddModal() {
+        document.getElementById("modalTitle").textContent = "Add Volunteer";
+        document.getElementById("volunteerId").value = "";
+        document.getElementById("volunteerName").value = "";
+        document.getElementById("volunteerEmail").value = "";
+        openModal("volunteerModal");
+    }
+
+    function openEditModal(id) {
+        const v = allVolunteers.find(item => item.id == id);
+        if (!v) return;
+
+        document.getElementById("modalTitle").textContent = "Edit Volunteer";
+        document.getElementById("volunteerId").value = v.id;
+        document.getElementById("volunteerName").value = v.name || "";
+        document.getElementById("volunteerEmail").value = v.email || "";
+        openModal("volunteerModal");
+    }
+
+    document.getElementById("volunteerForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const id = document.getElementById("volunteerId").value;
+        const name = document.getElementById("volunteerName").value.trim();
+        const email = document.getElementById("volunteerEmail").value.trim();
+
+        if (!name || !email) {
+            toast("Name and email are required.", "warning");
+            return;
+        }
+
+        const payload = { name, email };
+        const saveBtn = document.getElementById("saveVolunteerBtn");
+        saveBtn.disabled = true;
+
+        try {
+            if (id) {
+                await api("/api/volunteers/" + id, {
+                    method: "PUT",
+                    body: JSON.stringify(payload)
+                });
+                toast("Volunteer updated successfully", "success");
+            } else {
+                await api("/api/volunteers", {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+                toast("Volunteer created successfully", "success");
+            }
+            closeModal("volunteerModal");
+            await loadVolunteers();
+        } catch (error) {
+            showError(error);
+        } finally {
+            saveBtn.disabled = false;
+        }
+    });
+
+    async function deleteVolunteer(id) {
+        if (!confirmAction("Are you sure you want to delete this volunteer?")) {
+            return;
+        }
+
+        try {
+            await api("/api/volunteers/" + id, { method: "DELETE" });
+            toast("Volunteer deleted successfully", "success");
+            await loadVolunteers();
+        } catch (error) {
+            showError(error);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadVolunteers);
+</script>
+
+</body>
+</html>
